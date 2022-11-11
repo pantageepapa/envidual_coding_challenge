@@ -6,35 +6,46 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class LevelsDatabase {
+  //creates the instance of the database
   static final LevelsDatabase instance = LevelsDatabase._init();
 
+  //private database variable
   static Database? _database;
 
   LevelsDatabase._init();
 
+  //get method of the databse variable
   Future<Database> get database async {
+    //checks if the database already exists
     if (_database != null) return _database!;
 
+    //if not initialize the databse
     _database = await _initDB("database.db");
 
+    //deletes the database, as the app starts from the beginning but the table could
+    //still exist as its written in the document
     await delete();
+
+    //adds 30 dummy data to the database
     for (var i = 0; i < 30; i++) {
+      //adding id while creating the instance to be unique in the database
       Level level = Level(level: Random().nextInt(24), time: i, id: i);
       await LevelsDatabase.instance.create(level);
     }
-
     return _database!;
   }
 
   Future<Database> _initDB(String filePath) async {
+    //the path where the database is stored is being retrieved
     final dbPath = await getDatabasesPath();
-
     final path = join(dbPath, filePath);
 
+    //this creates the database
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
   Future _createDB(Database db, int version) async {
+    //this is the type of each column
     final idType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
     final integerType = 'INTEGER NOT NULL';
 
@@ -53,48 +64,36 @@ class LevelsDatabase {
   Future<void> delete() async {
     print("delete called");
     final db = await instance.database;
+
+    //deletes the table if it exists
     await db.delete(tableNotes);
   }
 
-  Future<Level> create(Level level) async {
+  Future<void> create(Level level) async {
     final db = await instance.database;
     //insertng the data into database by adding columns and corresponding values
     final id = await db.insert(tableNotes, level.toJson());
     //modifying the id
     print("successfully created");
-    return level.copy(id: id);
-  }
-
-  Future<Level> read(int id) async {
-    final db = await instance.database;
-    final maps = await db.query(tableNotes,
-        columns: LevelFields.values,
-        //prevents SQL injections
-        where: '${LevelFields.id} = ?',
-        whereArgs: [id]);
-    if (maps.isNotEmpty) {
-      return Level.fromJson(maps.first);
-    } else {
-      throw Exception("ID $id not found");
-    }
   }
 
   Future<List<Level>> readAll() async {
     final db = await instance.database;
+    //orders the result by the time
     final orderBy = "${LevelFields.time} ASC";
     final result = await db.query(tableNotes, orderBy: orderBy);
-    print(result);
+    //print(result);
     return result.map((json) => Level.fromJson(json)).toList();
   }
 
-  Future close() async {
-    final db = await instance.database;
-    db.close();
-  }
+  // Future close() async {
+  //   final db = await instance.database;
+  //   db.close();
+  // }
 
-  static Future<void> deleteDatabase(String filePath) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
-    await databaseFactory.deleteDatabase(path);
-  }
+  // static Future<void> deleteDatabase(String filePath) async {
+  //   final dbPath = await getDatabasesPath();
+  //   final path = join(dbPath, filePath);
+  //   await databaseFactory.deleteDatabase(path);
+  // }
 }

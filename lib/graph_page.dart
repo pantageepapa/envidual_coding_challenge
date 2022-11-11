@@ -46,6 +46,7 @@ class _GraphPageState extends State<GraphPage> {
         SizedBox(
           height: MediaQuery.of(context).size.height * 0.1,
         ),
+        //show the graph in a separate method
         graph(),
         Padding(
           padding: EdgeInsets.only(
